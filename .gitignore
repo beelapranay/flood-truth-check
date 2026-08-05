@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.firecrawl/
+output/
+.venv/
+*.egg-info/
+.DS_Store
+.claude/
+report/
+PROJECT.md
+REPORT.md

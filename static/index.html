@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flood Claim Truth-Check Agent — Mireye Build Challenge</title>
+<meta name="description" content="An agent that checks NFIP flood claims against Mireye's cited terrain and flood data, and ranks the ones whose story does not match the ground.">
+<meta property="og:title" content="Flood Claim Truth-Check Agent">
+<meta property="og:description" content="Checks flood claims against the ground, not the paperwork.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23181818'/%3E%3Cpath d='M16 6c4 6 8 10.5 8 15a8 8 0 1 1-16 0c0-4.5 4-9 8-15Z' fill='%235B9DF9'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/geist-mono@5.1.1/index.css">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Manrope', 'sans-serif'],
+          mono: ['Geist Mono', 'monospace'],
+        },
+        colors: {
+          bg: '#000000',
+          panel: '#181818',
+          panel2: '#1F1F1F',
+          panel3: '#272727',
+          line: '#313131',
+          muted: '#9B9B9B',
+          accent: '#5B9DF9',
+          warn: '#F5A524',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { background:#000000; }
+  .fluid { transition: all 700ms cubic-bezier(0.32,0.72,0,1); }
+  .grad-heading {
+    background: linear-gradient(90deg, #FFFFFF, #9B9B9B);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  h1, h2, .balance { text-wrap: balance; }
+  p, li { text-wrap: pretty; }
+
+  .reveal { opacity: 0; transform: translateY(4rem); filter: blur(6px); transition: all 900ms cubic-bezier(0.32,0.72,0,1); }
+  .reveal.in { opacity: 1; transform: translateY(0); filter: blur(0); }
+
+  .word { display: inline-block; color: rgba(255,255,255,0.3); transition: color 600ms cubic-bezier(0.32,0.72,0,1); }
+  .word.in { color: #FFFFFF; }
+
+  .hamburger-line { position:absolute; left:0; right:0; height:2px; background:#fff; transition: all 500ms cubic-bezier(0.32,0.72,0,1); }
+  .hamburger-line.top { top: 6px; }
+  .hamburger-line.bottom { top: 16px; }
+  #menu-btn[aria-expanded="true"] .hamburger-line.top { top: 11px; transform: rotate(45deg); }
+  #menu-btn[aria-expanded="true"] .hamburger-line.bottom { top: 11px; transform: rotate(-45deg); }
+
+  .menu-link { transform: translateY(3rem); opacity: 0; transition: all 700ms cubic-bezier(0.32,0.72,0,1); }
+  #mobile-menu.open { opacity: 1 !important; pointer-events: auto !important; }
+  #mobile-menu.open .menu-link { transform: translateY(0); opacity: 1; }
+
+  .skip-link { position:absolute; left:-9999px; top:0; background:#181818; color:#fff; padding:12px 16px; border-radius:8px; z-index:100; }
+  .skip-link:focus { left:16px; top:16px; }
+
+  a, button { outline-offset: 2px; }
+  a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible {
+    outline: 2px solid #5B9DF9; outline-offset: 2px;
+  }
+
+  .skeleton { background: linear-gradient(90deg, #1F1F1F 0%, #272727 50%, #1F1F1F 100%); background-size: 200% 100%; animation: shimmer 1.6s infinite; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-thumb { background: #313131; border-radius: 8px; }
+</style>
+</head>
+<body class="bg-bg text-white antialiased font-sans">
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="fixed top-0 inset-x-0 z-50 flex justify-center px-4">
+  <div class="mt-6 w-max max-w-[95vw] rounded-full bg-panel/80 backdrop-blur-xl border border-line px-4 py-2 flex items-center gap-6 fluid">
+    <a href="#top" class="flex items-center gap-2 text-sm font-semibold shrink-0">
+      <i class="ph ph-drop text-accent text-lg"></i>
+      <span class="hidden sm:inline">Flood Truth-Check</span>
+    </a>
+    <div class="hidden md:flex items-center gap-6 text-sm text-muted">
+      <a href="#how-it-works" class="hover:text-white fluid">How it works</a>
+      <a href="#run" class="hover:text-white fluid">Run agent</a>
+      <a href="#faq" class="hover:text-white fluid">FAQ</a>
+    </div>
+    <a href="#run" class="hidden md:inline-flex rounded-full bg-white text-black text-sm font-semibold px-3 py-2 fluid hover:bg-[#e5e5e5] active:scale-[0.98]">Run the agent</a>
+    <button id="menu-btn" class="md:hidden relative w-6 h-6 shrink-0" aria-label="Open menu" aria-expanded="false">
+      <span class="hamburger-line top"></span>
+      <span class="hamburger-line bottom"></span>
+    </button>
+  </div>
+</nav>
+
+<div id="mobile-menu" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-3xl opacity-0 pointer-events-none fluid">
+  <div class="h-full flex flex-col items-center justify-center gap-8">
+    <a class="menu-link text-2xl font-semibold" href="#how-it-works" style="transition-delay:100ms">How it works</a>
+    <a class="menu-link text-2xl font-semibold" href="#run" style="transition-delay:150ms">Run agent</a>
+    <a class="menu-link text-2xl font-semibold" href="#faq" style="transition-delay:200ms">FAQ</a>
+  </div>
+</div>
+
+<main id="main">
+
+<!-- HERO -->
+<section id="top" class="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-24 pb-16 gap-6">
+  <p class="text-sm text-muted tracking-wide">Mireye Build Challenge submission</p>
+  <h1 class="max-w-[680px] text-4xl md:text-6xl font-semibold grad-heading balance">
+    Check flood claims against the ground, not the paperwork
+  </h1>
+  <p class="max-w-[680px] text-lg text-muted">
+    An agent that reads real NFIP flood claims and checks each one's stated risk against
+    Mireye's independently cited terrain and flood data — built for the claims that have
+    no elevation certificate to check them against instead.
+  </p>
+  <div class="flex flex-wrap items-center justify-center gap-4 mt-2">
+    <a href="#run" class="rounded-full bg-white text-black text-base font-semibold px-3 py-2 fluid hover:bg-[#e5e5e5] active:scale-[0.98]">Run the agent</a>
+    <a href="#how-it-works" class="rounded-full border border-line text-base font-semibold px-3 py-2 fluid hover:bg-panel active:scale-[0.98]">See how it works</a>
+  </div>
+
+  <div class="mt-8 max-w-[680px] rounded-2xl border border-line bg-panel px-4 py-3 flex items-start gap-3 text-left">
+    <i class="ph ph-chart-bar text-accent text-xl mt-1 shrink-0"></i>
+    <p class="text-sm text-muted">
+      <span id="proof-pct" class="font-mono text-white">91%</span> of recent NFIP flood claims
+      (<span id="proof-frac" class="font-mono text-white">124,875 of 137,119</span>) are missing
+      the elevation certificate meant to verify them — checked live against FEMA's own public claims data.
+    </p>
+  </div>
+
+  <div class="reveal mt-10 w-full max-w-[560px] rounded-2xl border border-line bg-panel2 p-6 text-left">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs uppercase tracking-wide text-muted">Example flagged claim</span>
+      <span class="rounded-full bg-warn/15 text-warn text-xs font-semibold px-2 py-1">priority 70.0</span>
+    </div>
+    <p class="text-sm mb-3">Rated <span class="font-mono">AE</span> (high-risk) — Mireye's current FEMA lookup for this location shows <span class="font-mono">Zone X</span>, not within a mapped floodplain, no wetlands within 500m, elevation 134m.</p>
+    <div class="flex flex-wrap gap-2 text-xs text-muted font-mono">
+      <span class="rounded-md bg-panel3 px-2 py-1">FEMA_NFHL</span>
+      <span class="rounded-md bg-panel3 px-2 py-1">USGS_3DEP_COG</span>
+      <span class="rounded-md bg-panel3 px-2 py-1">USFWS_NWI</span>
+    </div>
+  </div>
+</section>
+
+<!-- TAGLINE REVEAL -->
+<section class="py-24 px-6 flex justify-center">
+  <p id="tagline" class="max-w-[680px] text-3xl md:text-5xl font-semibold text-center leading-tight balance"></p>
+</section>
+
+<!-- PROBLEM / SOLUTION -->
+<section id="problem" class="px-6 py-16 flex justify-center">
+  <div class="max-w-[880px] w-full">
+    <h2 class="reveal text-2xl md:text-3xl font-semibold mb-8 balance">Why the obvious checks do not work</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="reveal rounded-2xl border border-line bg-panel p-5">
+        <i class="ph ph-map-pin text-accent text-2xl"></i>
+        <h3 class="font-semibold mt-3 mb-2">What we tried first</h3>
+        <p class="text-sm text-muted">Check a claim against its exact property. Public NFIP claims data rounds every location to about a seven mile box to protect privacy, so there is no exact address to check.</p>
+      </div>
+      <div class="reveal rounded-2xl border border-line bg-panel p-5">
+        <i class="ph ph-arrows-clockwise text-accent text-2xl"></i>
+        <h3 class="font-semibold mt-3 mb-2">Why the next idea broke</h3>
+        <p class="text-sm text-muted">Flag claims whose flood zone was never updated after a remap. NFIP has an official grandfathering rule that lets policyholders keep their old zone on purpose, so a mismatch there is usually legal, not an error.</p>
+      </div>
+      <div class="reveal rounded-2xl border border-line bg-panel p-5">
+        <i class="ph ph-check-circle text-accent text-2xl"></i>
+        <h3 class="font-semibold mt-3 mb-2">What works instead</h3>
+        <p class="text-sm text-muted">Compare a claim's stated risk against Mireye's independently measured terrain today. A claim calling itself coastal high hazard on terrain that sits high, dry, and miles from water is a contradiction regardless of any rule about zones.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works" class="px-6 py-16 flex justify-center">
+  <div class="max-w-[880px] w-full">
+    <h2 class="reveal text-2xl md:text-3xl font-semibold mb-8 balance">How it works</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="reveal rounded-2xl border border-line bg-panel p-5">
+        <span class="font-mono text-muted text-sm">01</span>
+        <h3 class="font-semibold mt-2 mb-2 flex items-center gap-2"><i class="ph ph-database text-accent"></i> Pull claims</h3>
+        <p class="text-sm text-muted">Recent NFIP claims come straight from FEMA's public OpenFEMA claims API — no scraping, no private data.</p>
+      </div>
+      <div class="reveal rounded-2xl border border-line bg-panel p-5">
+        <span class="font-mono text-muted text-sm">02</span>
+        <h3 class="font-semibold mt-2 mb-2 flex items-center gap-2"><i class="ph ph-globe text-accent"></i> Check the ground</h3>
+        <p class="text-sm text-muted">Each claim's location is sent to Mireye for cited elevation, floodplain, coastal, and wetland facts, sourced straight from USGS, FEMA, and NOAA.</p>
+      </div>
+      <div class="reveal rounded-2xl border border-line bg-panel p-5">
+        <span class="font-mono text-muted text-sm">03</span>
+        <h3 class="font-semibold mt-2 mb-2 flex items-center gap-2"><i class="ph ph-rank text-accent"></i> Rank contradictions</h3>
+        <p class="text-sm text-muted">Claims need two or more independent signals to disagree before they are flagged, then get ranked by contradiction strength and payout size.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RUN PANEL -->
+<section id="run" class="px-6 py-16 flex justify-center">
+  <div class="max-w-[1000px] w-full">
+    <h2 class="reveal text-2xl md:text-3xl font-semibold mb-2 balance">Run the agent</h2>
+    <p class="reveal text-muted mb-8">Pull a fresh batch of claims and score them against Mireye, live.</p>
+
+    <div class="grid md:grid-cols-[320px_1fr] gap-6">
+      <!-- controls + history -->
+      <div class="space-y-4">
+        <form id="run-form" class="rounded-2xl border border-line bg-panel p-5 space-y-4">
+          <div>
+            <label class="text-sm text-muted block mb-2" for="year-from">Claims from year</label>
+            <input id="year-from" type="number" min="2010" max="2026" value="2023" class="w-full rounded-lg bg-panel2 border border-line px-3 py-2 text-sm font-mono focus:border-accent">
+          </div>
+          <div>
+            <label class="text-sm text-muted block mb-2" for="limit">Sample size <span class="text-xs">(capped at 50 on this public deploy)</span></label>
+            <input id="limit" type="number" min="10" max="50" value="50" class="w-full rounded-lg bg-panel2 border border-line px-3 py-2 text-sm font-mono focus:border-accent">
+          </div>
+          <button type="submit" id="run-btn" class="w-full rounded-full bg-white text-black text-base font-semibold px-3 py-2 fluid hover:bg-[#e5e5e5] active:scale-[0.98] flex items-center justify-center gap-2">
+            <i class="ph ph-play"></i> Run analysis
+          </button>
+          <p id="credits-warning" class="text-xs text-muted flex items-start gap-1.5 fluid">
+            <i class="ph ph-warning shrink-0 mt-0.5"></i>
+            <span>Mireye API credits are running low for this project. The analysis could stop partway through if they run out.</span>
+          </p>
+        </form>
+
+        <div class="rounded-2xl border border-line bg-panel p-5">
+          <h3 class="text-sm font-semibold text-muted mb-3">Run history</h3>
+          <div id="run-history" class="space-y-2 text-sm">
+            <p class="text-muted text-sm">No runs yet.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- results -->
+      <div id="run-output" class="space-y-4">
+        <div class="rounded-2xl border border-line bg-panel p-8 flex flex-col items-center justify-center text-center gap-3 min-h-[280px]">
+          <i class="ph ph-flask text-muted text-3xl"></i>
+          <p class="text-muted text-sm max-w-[360px]">Set a sample size and run the agent to pull live claims and score them against Mireye.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="px-6 py-16 flex justify-center">
+  <div class="max-w-[720px] w-full">
+    <h2 class="reveal text-2xl md:text-3xl font-semibold mb-8 balance">Frequently asked questions</h2>
+    <div class="space-y-3" id="faq-list"></div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="px-6 py-24 flex flex-col items-center text-center gap-6">
+  <h2 class="reveal text-2xl md:text-4xl font-semibold max-w-[680px] balance">Run the agent on a fresh batch of claims</h2>
+  <a href="#run" class="rounded-full bg-white text-black text-base font-semibold px-3 py-2 fluid hover:bg-[#e5e5e5] active:scale-[0.98]">Run the agent</a>
+</section>
+
+</main>
+
+<footer class="border-t border-line px-6 py-10">
+  <div class="max-w-[880px] mx-auto flex flex-col md:flex-row justify-between gap-6 text-sm text-muted">
+    <div>
+      <p class="text-white font-semibold mb-2">Flood Claim Truth-Check Agent</p>
+      <p>Built for the Mireye Build Challenge, 2026.</p>
+    </div>
+    <div>
+      <p class="text-white font-semibold mb-2">Data sources</p>
+      <ul class="space-y-1">
+        <li><a class="hover:text-white fluid" href="https://www.fema.gov/openfema-data-page/nfip-redacted-claims-v3" target="_blank" rel="noopener">FEMA OpenFEMA — NFIP Redacted Claims</a></li>
+        <li><a class="hover:text-white fluid" href="https://docs.mireye.ai" target="_blank" rel="noopener">Mireye API — flood_risk preset</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
