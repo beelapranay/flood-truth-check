@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,6 +8,12 @@
 <meta property="og:title" content="Flood Claim Truth-Check Agent">
 <meta property="og:description" content="Checks flood claims against the ground, not the paperwork.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23181818'/%3E%3Cpath d='M16 6c4 6 8 10.5 8 15a8 8 0 1 1-16 0c0-4.5 4-9 8-15Z' fill='%235B9DF9'/%3E%3C/svg%3E">
+<script>
+  (function () {
+    var stored = localStorage.getItem('theme');
+    document.documentElement.setAttribute('data-theme', stored === 'light' ? 'light' : 'dark');
+  })();
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,25 +30,73 @@
           mono: ['Geist Mono', 'monospace'],
         },
         colors: {
-          bg: '#000000',
-          panel: '#181818',
-          panel2: '#1F1F1F',
-          panel3: '#272727',
-          line: '#313131',
-          muted: '#9B9B9B',
+          bg: 'var(--c-bg)',
+          panel: 'var(--c-panel)',
+          panel2: 'var(--c-panel2)',
+          panel3: 'var(--c-panel3)',
+          line: 'var(--c-line)',
+          muted: 'var(--c-muted)',
+          ink: 'var(--c-ink)',
           accent: '#5B9DF9',
           warn: '#F5A524',
+          btnbg: 'var(--c-btn-bg)',
+          btntext: 'var(--c-btn-text)',
         },
       },
     },
   };
 </script>
 <style>
+  :root {
+    --c-bg: #000000;
+    --c-panel: #181818;
+    --c-panel2: #1F1F1F;
+    --c-panel3: #272727;
+    --c-line: #313131;
+    --c-muted: #9B9B9B;
+    --c-ink: #FFFFFF;
+    --c-word-rest: rgba(255,255,255,0.3);
+    --c-btn-bg: #FFFFFF;
+    --c-btn-text: #000000;
+    --c-btn-hover: #E5E5E5;
+    --c-grad-start: #FFFFFF;
+    --c-grad-end: #9B9B9B;
+    --c-menu-overlay: rgba(0,0,0,0.8);
+    --c-skel-1: #1F1F1F;
+    --c-skel-2: #272727;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --c-bg: #FCFCFB;
+    --c-panel: #F5F4F1;
+    --c-panel2: #EFEEEA;
+    --c-panel3: #E6E5E0;
+    --c-line: #E3E2DD;
+    --c-muted: #52514E;
+    --c-ink: #0B0B0B;
+    --c-word-rest: rgba(11,11,11,0.28);
+    --c-btn-bg: #0B0B0B;
+    --c-btn-text: #FFFFFF;
+    --c-btn-hover: #272727;
+    --c-grad-start: #000000;
+    --c-grad-end: #666666;
+    --c-menu-overlay: rgba(252,252,251,0.85);
+    --c-skel-1: #EFEEEA;
+    --c-skel-2: #E6E5E0;
+    color-scheme: light;
+  }
+
   html { scroll-behavior: smooth; }
-  body { background:#000000; }
+  body { background: var(--c-bg); }
   .fluid { transition: all 700ms cubic-bezier(0.32,0.72,0,1); }
+
+  /* smooth theme switch across every panel/card/button on the page */
+  body, .rounded-2xl, .rounded-full, .rounded-lg, .rounded-md, nav > div, #mobile-menu {
+    transition: background-color 700ms cubic-bezier(0.32,0.72,0,1), color 700ms cubic-bezier(0.32,0.72,0,1), border-color 700ms cubic-bezier(0.32,0.72,0,1);
+  }
+
   .grad-heading {
-    background: linear-gradient(90deg, #FFFFFF, #9B9B9B);
+    background: linear-gradient(90deg, var(--c-grad-start), var(--c-grad-end));
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
   h1, h2, .balance { text-wrap: balance; }
@@ -51,10 +105,10 @@
   .reveal { opacity: 0; transform: translateY(4rem); filter: blur(6px); transition: all 900ms cubic-bezier(0.32,0.72,0,1); }
   .reveal.in { opacity: 1; transform: translateY(0); filter: blur(0); }
 
-  .word { display: inline-block; color: rgba(255,255,255,0.3); transition: color 600ms cubic-bezier(0.32,0.72,0,1); }
-  .word.in { color: #FFFFFF; }
+  .word { display: inline-block; color: var(--c-word-rest); transition: color 600ms cubic-bezier(0.32,0.72,0,1); }
+  .word.in { color: var(--c-ink); }
 
-  .hamburger-line { position:absolute; left:0; right:0; height:2px; background:#fff; transition: all 500ms cubic-bezier(0.32,0.72,0,1); }
+  .hamburger-line { position:absolute; left:0; right:0; height:2px; background: var(--c-ink); transition: all 500ms cubic-bezier(0.32,0.72,0,1); }
   .hamburger-line.top { top: 6px; }
   .hamburger-line.bottom { top: 16px; }
   #menu-btn[aria-expanded="true"] .hamburger-line.top { top: 11px; transform: rotate(45deg); }
@@ -64,7 +118,7 @@
   #mobile-menu.open { opacity: 1 !important; pointer-events: auto !important; }
   #mobile-menu.open .menu-link { transform: translateY(0); opacity: 1; }
 
-  .skip-link { position:absolute; left:-9999px; top:0; background:#181818; color:#fff; padding:12px 16px; border-radius:8px; z-index:100; }
+  .skip-link { position:absolute; left:-9999px; top:0; background: var(--c-panel); color: var(--c-ink); padding:12px 16px; border-radius:8px; z-index:100; }
   .skip-link:focus { left:16px; top:16px; }
 
   a, button { outline-offset: 2px; }
@@ -72,14 +126,24 @@
     outline: 2px solid #5B9DF9; outline-offset: 2px;
   }
 
-  .skeleton { background: linear-gradient(90deg, #1F1F1F 0%, #272727 50%, #1F1F1F 100%); background-size: 200% 100%; animation: shimmer 1.6s infinite; }
+  .skeleton { background: linear-gradient(90deg, var(--c-skel-1) 0%, var(--c-skel-2) 50%, var(--c-skel-1) 100%); background-size: 200% 100%; animation: shimmer 1.6s infinite; }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
   ::-webkit-scrollbar { width: 10px; }
-  ::-webkit-scrollbar-thumb { background: #313131; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--c-line); border-radius: 8px; }
+
+  /* theme toggle icon morph */
+  .theme-icon {
+    position: absolute; top: 50%; left: 50%; font-size: 15px; color: var(--c-ink);
+    transition: opacity 700ms cubic-bezier(0.32,0.72,0,1), transform 700ms cubic-bezier(0.32,0.72,0,1);
+  }
+  .theme-icon-sun { transform: translate(-50%,-50%) rotate(0deg) scale(1); opacity: 1; }
+  .theme-icon-moon { transform: translate(-50%,-50%) rotate(90deg) scale(0.4); opacity: 0; }
+  [data-theme="light"] .theme-icon-sun { transform: translate(-50%,-50%) rotate(-90deg) scale(0.4); opacity: 0; }
+  [data-theme="light"] .theme-icon-moon { transform: translate(-50%,-50%) rotate(0deg) scale(1); opacity: 1; }
 </style>
 </head>
-<body class="bg-bg text-white antialiased font-sans">
+<body class="bg-bg text-ink antialiased font-sans">
 <a href="#main" class="skip-link">Skip to content</a>
 
 <nav class="fixed top-0 inset-x-0 z-50 flex justify-center px-4">
@@ -89,11 +153,15 @@
       <span class="hidden sm:inline">Flood Truth-Check</span>
     </a>
     <div class="hidden md:flex items-center gap-6 text-sm text-muted">
-      <a href="#how-it-works" class="hover:text-white fluid">How it works</a>
-      <a href="#run" class="hover:text-white fluid">Run agent</a>
-      <a href="#faq" class="hover:text-white fluid">FAQ</a>
+      <a href="#how-it-works" class="hover:text-ink fluid">How it works</a>
+      <a href="#run" class="hover:text-ink fluid">Run agent</a>
+      <a href="#faq" class="hover:text-ink fluid">FAQ</a>
     </div>
-    <a href="#run" class="hidden md:inline-flex rounded-full bg-white text-black text-sm font-semibold px-3 py-2 fluid hover:bg-[#e5e5e5] active:scale-[0.98]">Run the agent</a>
+    <a href="#run" class="hidden md:inline-flex rounded-full bg-btnbg text-btntext text-sm font-semibold px-3 py-2 fluid hover:bg-[var(--c-btn-hover)] active:scale-[0.98]">Run the agent</a>
+    <button id="theme-toggle" class="relative w-8 h-8 shrink-0 rounded-full border border-line hover:bg-panel2 fluid" aria-label="Switch to light theme" aria-pressed="false">
+      <i class="ph ph-sun theme-icon theme-icon-sun"></i>
+      <i class="ph ph-moon theme-icon theme-icon-moon"></i>
+    </button>
     <button id="menu-btn" class="md:hidden relative w-6 h-6 shrink-0" aria-label="Open menu" aria-expanded="false">
       <span class="hamburger-line top"></span>
       <span class="hamburger-line bottom"></span>
@@ -101,7 +169,7 @@
   </div>
 </nav>
 
-<div id="mobile-menu" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-3xl opacity-0 pointer-events-none fluid">
+<div id="mobile-menu" class="fixed inset-0 z-40 bg-[var(--c-menu-overlay)] backdrop-blur-3xl opacity-0 pointer-events-none fluid">
   <div class="h-full flex flex-col items-center justify-center gap-8">
     <a class="menu-link text-2xl font-semibold" href="#how-it-works" style="transition-delay:100ms">How it works</a>
     <a class="menu-link text-2xl font-semibold" href="#run" style="transition-delay:150ms">Run agent</a>
@@ -123,15 +191,15 @@
     no elevation certificate to check them against instead.
   </p>
   <div class="flex flex-wrap items-center justify-center gap-4 mt-2">
-    <a href="#run" class="rounded-full bg-white text-black text-base font-semibold px-3 py-2 fluid hover:bg-[#e5e5e5] active:scale-[0.98]">Run the agent</a>
+    <a href="#run" class="rounded-full bg-btnbg text-btntext text-base font-semibold px-3 py-2 fluid hover:bg-[var(--c-btn-hover)] active:scale-[0.98]">Run the agent</a>
     <a href="#how-it-works" class="rounded-full border border-line text-base font-semibold px-3 py-2 fluid hover:bg-panel active:scale-[0.98]">See how it works</a>
   </div>
 
   <div class="mt-8 max-w-[680px] rounded-2xl border border-line bg-panel px-4 py-3 flex items-start gap-3 text-left">
     <i class="ph ph-chart-bar text-accent text-xl mt-1 shrink-0"></i>
     <p class="text-sm text-muted">
-      <span id="proof-pct" class="font-mono text-white">91%</span> of recent NFIP flood claims
-      (<span id="proof-frac" class="font-mono text-white">124,875 of 137,119</span>) are missing
+      <span id="proof-pct" class="font-mono text-ink">91%</span> of recent NFIP flood claims
+      (<span id="proof-frac" class="font-mono text-ink">124,875 of 137,119</span>) are missing
       the elevation certificate meant to verify them — checked live against FEMA's own public claims data.
     </p>
   </div>
@@ -221,7 +289,7 @@
             <label class="text-sm text-muted block mb-2" for="limit">Sample size <span class="text-xs">(capped at 50 on this public deploy)</span></label>
             <input id="limit" type="number" min="10" max="50" value="50" class="w-full rounded-lg bg-panel2 border border-line px-3 py-2 text-sm font-mono focus:border-accent">
           </div>
-          <button type="submit" id="run-btn" class="w-full rounded-full bg-white text-black text-base font-semibold px-3 py-2 fluid hover:bg-[#e5e5e5] active:scale-[0.98] flex items-center justify-center gap-2">
+          <button type="submit" id="run-btn" class="w-full rounded-full bg-btnbg text-btntext text-base font-semibold px-3 py-2 fluid hover:bg-[var(--c-btn-hover)] active:scale-[0.98] flex items-center justify-center gap-2">
             <i class="ph ph-play"></i> Run analysis
           </button>
           <p id="credits-warning" class="text-xs text-muted flex items-start gap-1.5 fluid">
@@ -260,7 +328,7 @@
 <!-- FINAL CTA -->
 <section class="px-6 py-24 flex flex-col items-center text-center gap-6">
   <h2 class="reveal text-2xl md:text-4xl font-semibold max-w-[680px] balance">Run the agent on a fresh batch of claims</h2>
-  <a href="#run" class="rounded-full bg-white text-black text-base font-semibold px-3 py-2 fluid hover:bg-[#e5e5e5] active:scale-[0.98]">Run the agent</a>
+  <a href="#run" class="rounded-full bg-btnbg text-btntext text-base font-semibold px-3 py-2 fluid hover:bg-[var(--c-btn-hover)] active:scale-[0.98]">Run the agent</a>
 </section>
 
 </main>
@@ -268,14 +336,14 @@
 <footer class="border-t border-line px-6 py-10">
   <div class="max-w-[880px] mx-auto flex flex-col md:flex-row justify-between gap-6 text-sm text-muted">
     <div>
-      <p class="text-white font-semibold mb-2">Flood Claim Truth-Check Agent</p>
+      <p class="text-ink font-semibold mb-2">Flood Claim Truth-Check Agent</p>
       <p>Built for the Mireye Build Challenge, 2026.</p>
     </div>
     <div>
-      <p class="text-white font-semibold mb-2">Data sources</p>
+      <p class="text-ink font-semibold mb-2">Data sources</p>
       <ul class="space-y-1">
-        <li><a class="hover:text-white fluid" href="https://www.fema.gov/openfema-data-page/nfip-redacted-claims-v3" target="_blank" rel="noopener">FEMA OpenFEMA — NFIP Redacted Claims</a></li>
-        <li><a class="hover:text-white fluid" href="https://docs.mireye.ai" target="_blank" rel="noopener">Mireye API — flood_risk preset</a></li>
+        <li><a class="hover:text-ink fluid" href="https://www.fema.gov/openfema-data-page/nfip-redacted-claims-v3" target="_blank" rel="noopener">FEMA OpenFEMA — NFIP Redacted Claims</a></li>
+        <li><a class="hover:text-ink fluid" href="https://docs.mireye.ai" target="_blank" rel="noopener">Mireye API — flood_risk preset</a></li>
       </ul>
     </div>
   </div>

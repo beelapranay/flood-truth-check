@@ -1,5 +1,19 @@
 // Flood Claim Truth-Check Agent — frontend logic
 
+// ---------- theme toggle ----------
+const themeToggle = document.getElementById('theme-toggle');
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeToggle.setAttribute('aria-pressed', String(theme === 'light'));
+  themeToggle.setAttribute('aria-label', theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme');
+}
+themeToggle.addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  localStorage.setItem('theme', next);
+  applyTheme(next);
+});
+applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+
 // ---------- mobile menu ----------
 const menuBtn = document.getElementById('menu-btn');
 const mobileMenu = document.getElementById('mobile-menu');
