@@ -130,7 +130,7 @@ def reason_about_claim(claim: dict, rule_result: dict) -> Optional[dict]:
 def reason_about_claims(scored_claims, claims_by_id, max_workers=4):
     """Mutates each scored claim dict in place, adding an 'llm' key.
     Returns aggregate usage totals across the batch."""
-    totals = {"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "failed": 0}
+    totals = {"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "failed": 0, "sample_errors": []}
 
     def _run(s):
         claim = claims_by_id.get(s["claim_id"], {})
@@ -143,6 +143,8 @@ def reason_about_claims(scored_claims, claims_by_id, max_workers=4):
             if result is None or "error" in (result or {}):
                 totals["failed"] += 1
                 s["llm"] = None
+                if result and "error" in result and len(totals["sample_errors"]) < 3:
+                    totals["sample_errors"].append(result["error"])
             else:
                 s["llm"] = {k: v for k, v in result.items() if k != "usage"}
                 for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"):

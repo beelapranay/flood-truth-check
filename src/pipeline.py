@@ -64,6 +64,8 @@ def run_pipeline(year_from=2023, limit=300, progress=None):
         llm_usage = reason_about_claims(scored, claims_by_id)
         reviewed = len(scored) - llm_usage["failed"]
         emit(f"Agent reviewed {reviewed} of {len(scored)} claims ({llm_usage['failed']} review calls failed).")
+        if llm_usage.get("sample_errors"):
+            emit(f"Sample review error: {llm_usage['sample_errors'][0]}")
 
     elapsed = round(time.time() - started_at, 1)
     emit(f"Done in {elapsed}s — {len(scored)} of {len(claims)} claims flagged.")
