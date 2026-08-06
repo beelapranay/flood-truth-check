@@ -29,6 +29,12 @@ def render_report(scored_claims, claims_by_id, total_scanned, top_n=30):
             f"- Rated flood zone: {s['claim_zone']}\n"
             f"- Net building payout: ${payout:,.0f}\n"
         )
+        llm = s.get("llm")
+        if llm:
+            lines.append(
+                f"**Agent's read ({llm['decision']}, {llm['confidence']} confidence):** {llm['rationale']}\n"
+                f"**Recommended action:** {llm['recommended_action']}\n"
+            )
         lines.append("**Why flagged:**")
         for r in s["reasons"]:
             lines.append(f"- {r}")

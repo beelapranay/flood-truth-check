@@ -194,6 +194,23 @@ function claimCard(s, claim) {
     </div>
   `).join('');
 
+  let agentRead = '';
+  if (s.llm) {
+    const decisionColor = s.llm.decision === 'escalate' ? 'text-warn bg-warn/15' : 'text-muted bg-panel3';
+    agentRead = `
+      <div class="rounded-xl border border-line bg-panel2 p-3 mb-3">
+        <div class="flex items-center gap-2 mb-1.5">
+          <i class="ph ph-robot text-accent"></i>
+          <span class="text-xs uppercase tracking-wide text-muted">Agent's read</span>
+          <span class="rounded-full ${decisionColor} text-xs font-semibold px-2 py-0.5">${s.llm.decision}</span>
+          <span class="text-xs text-muted">${s.llm.confidence} confidence</span>
+        </div>
+        <p class="text-sm mb-1.5">${s.llm.rationale}</p>
+        <p class="text-xs text-muted"><span class="text-ink font-semibold">Recommended:</span> ${s.llm.recommended_action}</p>
+      </div>
+    `;
+  }
+
   const div = document.createElement('div');
   div.className = 'rounded-2xl border border-line bg-panel p-5';
   div.innerHTML = `
@@ -205,10 +222,11 @@ function claimCard(s, claim) {
       <span class="rounded-full bg-warn/15 text-warn text-xs font-semibold px-2 py-1 shrink-0">priority ${s.priority}</span>
     </div>
     <div class="flex flex-wrap gap-3 text-xs text-muted mb-3">
-      <span>zone <span class="font-mono text-white">${s.claim_zone}</span></span>
-      <span>payout <span class="font-mono text-white">${fmtMoney(s.payout)}</span></span>
-      <span>score <span class="font-mono text-white">${s.score}</span></span>
+      <span>zone <span class="font-mono text-ink">${s.claim_zone}</span></span>
+      <span>payout <span class="font-mono text-ink">${fmtMoney(s.payout)}</span></span>
+      <span>score <span class="font-mono text-ink">${s.score}</span></span>
     </div>
+    ${agentRead}
     <ul class="text-sm space-y-1.5 mb-3">${reasons}</ul>
     <details class="fluid">
       <summary class="cursor-pointer text-xs text-accent">Show Mireye citations</summary>
@@ -222,12 +240,15 @@ function renderResults(job) {
   const claims = job.claims_by_id || {};
   const scored = job.scored_claims || [];
 
+  const escalated = scored.filter(s => s.llm && s.llm.decision === 'escalate').length;
+
   const summary = document.createElement('div');
-  summary.className = 'grid grid-cols-2 md:grid-cols-4 gap-3';
+  summary.className = 'grid grid-cols-2 md:grid-cols-5 gap-3';
   const stats = [
     ['scanned', job.total_scanned],
     ['unique locations', job.unique_locations],
     ['flagged', job.flagged_count],
+    ['agent escalated', escalated],
     ['elapsed', `${job.elapsed_seconds}s`],
   ];
   summary.innerHTML = stats.map(([label, val]) => `

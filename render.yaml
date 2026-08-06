@@ -10,3 +10,7 @@ services:
         value: 3.12.7
       - key: MIREYE_API_KEY
         sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-haiku-4-5-20251001

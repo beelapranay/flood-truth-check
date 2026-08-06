@@ -63,6 +63,7 @@ def _execute_run(run_id, year_from, limit):
                 "scored_claims": result["scored_claims"],
                 "claims_by_id": result["claims_by_id"],
                 "credits_exhausted": result["credits_exhausted"],
+                "llm_usage": result["llm_usage"],
             })
     except MireyeCreditsExhausted:
         with jobs_lock:

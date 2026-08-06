@@ -4,6 +4,7 @@ import time
 from src.fetch_claims import fetch_claims
 from src.mireye_client import fetch_batch_chunked, MireyeCreditsExhausted
 from src.analyze import score_claim
+from src.reasoner import reason_about_claims
 
 
 def run_pipeline(year_from=2023, limit=300, progress=None):
@@ -56,6 +57,14 @@ def run_pipeline(year_from=2023, limit=300, progress=None):
             scored.append(result)
 
     scored.sort(key=lambda x: x["priority"], reverse=True)
+
+    llm_usage = {"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "failed": 0}
+    if scored:
+        emit(f"Asking the agent to review {len(scored)} flagged claims...")
+        llm_usage = reason_about_claims(scored, claims_by_id)
+        reviewed = len(scored) - llm_usage["failed"]
+        emit(f"Agent reviewed {reviewed} of {len(scored)} claims ({llm_usage['failed']} review calls failed).")
+
     elapsed = round(time.time() - started_at, 1)
     emit(f"Done in {elapsed}s — {len(scored)} of {len(claims)} claims flagged.")
 
@@ -68,4 +77,5 @@ def run_pipeline(year_from=2023, limit=300, progress=None):
         "scored_claims": scored,
         "claims_by_id": claims_by_id,
         "credits_exhausted": credits_exhausted,
+        "llm_usage": llm_usage,
     }
